@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ドパパス</title>
+  <meta name="description" content="ドパミン駆動でITパスポートを攻略するクイズアプリ">
+  <meta name="theme-color" content="#0b0b1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ドパパス">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ホーム -->
+    <section id="screen-home" class="screen active">
+      <header class="home-head">
+        <h1 class="logo">ドパ<span>パス</span></h1>
+        <p class="tagline">ITパスポートをドパミンで殴る</p>
+        <button id="btn-mute" class="icon-btn" aria-label="効果音の切り替え">🔊</button>
+      </header>
+
+      <div class="card profile">
+        <div class="lv-row">
+          <div class="lv-badge">Lv.<b id="home-level">1</b></div>
+          <div class="lv-info">
+            <div id="home-title" class="title-name">ITの赤ちゃん</div>
+            <div class="xpbar"><div id="home-xpfill" class="xpfill"></div></div>
+            <div class="xp-text"><span id="home-xp">0</span> / <span id="home-xpnext">100</span> XP</div>
+          </div>
+        </div>
+        <div class="stats-row">
+          <div><b id="home-streak">0</b><small>連続日数🔥</small></div>
+          <div><b id="home-acc">-</b><small>正答率</small></div>
+          <div><b id="home-best">0</b><small>最高コンボ</small></div>
+          <div><b id="home-cleared">0</b><small>正解済み</small></div>
+        </div>
+      </div>
+
+      <h2 class="sec-label">モード</h2>
+      <div class="mode-grid" id="mode-grid">
+        <button class="mode-btn" data-mode="past">
+          <span class="mode-emoji">📜</span><span class="mode-name">過去問</span>
+          <small id="cnt-past">IPA公開問題</small>
+        </button>
+        <button class="mode-btn" data-mode="original">
+          <span class="mode-emoji">🧪</span><span class="mode-name">オリジナル</span>
+          <small id="cnt-original">完全新作</small>
+        </button>
+        <button class="mode-btn" data-mode="mix">
+          <span class="mode-emoji">🎰</span><span class="mode-name">ミックス</span>
+          <small id="cnt-mix">全部まぜる</small>
+        </button>
+        <button class="mode-btn" data-mode="weak">
+          <span class="mode-emoji">💀</span><span class="mode-name">苦手つぶし</span>
+          <small id="cnt-weak">0問</small>
+        </button>
+      </div>
+
+      <h2 class="sec-label">分野</h2>
+      <div class="chips" id="field-chips">
+        <button class="chip active" data-field="all">ぜんぶ</button>
+        <button class="chip" data-field="strategy">ストラテジ</button>
+        <button class="chip" data-field="management">マネジメント</button>
+        <button class="chip" data-field="technology">テクノロジ</button>
+      </div>
+
+      <button id="btn-start" class="big-btn">スタート ▶ 10問</button>
+      <p id="home-msg" class="home-msg" role="status"></p>
+
+      <footer class="foot">
+        過去問の出典：IPA ITパスポート試験 公開問題（各問に表記）。解説・オリジナル問題は本アプリ独自のものです。
+      </footer>
+    </section>
+
+    <!-- 出題 -->
+    <section id="screen-quiz" class="screen">
+      <div class="quiz-top">
+        <button id="btn-quit" class="icon-btn" aria-label="ホームへ戻る">✕</button>
+        <div class="progress-dots" id="progress-dots"></div>
+        <div class="score-pill"><span id="quiz-xp">0</span> XP</div>
+      </div>
+      <div class="timer"><div id="timer-fill" class="timer-fill"></div></div>
+      <div class="combo-line">
+        <span id="combo-label" class="combo-label"></span>
+        <span id="quiz-meta" class="quiz-meta"></span>
+      </div>
+
+      <div class="qbox">
+        <p id="q-text" class="q-text"></p>
+        <div id="q-table" class="q-table"></div>
+      </div>
+      <div id="choices" class="choices"></div>
+
+      <div id="feedback" class="feedback hidden">
+        <div id="fb-head" class="fb-head"></div>
+        <p id="fb-explain" class="fb-explain"></p>
+        <button id="btn-next" class="big-btn">次へ ▶</button>
+      </div>
+      <p id="q-credit" class="q-credit"></p>
+    </section>
+
+    <!-- 結果 -->
+    <section id="screen-result" class="screen">
+      <h2 id="res-head" class="res-head"></h2>
+      <div class="card res-card">
+        <div class="res-big"><b id="res-correct">0</b><span>/ 10</span></div>
+        <div class="stats-row">
+          <div><b id="res-xp">0</b><small>獲得XP</small></div>
+          <div><b id="res-combo">0</b><small>最大コンボ</small></div>
+          <div><b id="res-time">0</b><small>平均秒</small></div>
+        </div>
+      </div>
+      <div id="res-list" class="res-list"></div>
+      <button id="btn-again" class="big-btn">もう1回 🔁</button>
+      <button id="btn-home" class="sub-btn">ホームへ</button>
+    </section>
+  </div>
+
+  <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
+  <div id="levelup" class="levelup hidden" role="dialog" aria-live="polite">
+    <div class="lu-inner">
+      <div class="lu-label">LEVEL UP!!</div>
+      <div class="lu-level">Lv.<b id="lu-level">2</b></div>
+      <div id="lu-title" class="lu-title"></div>
+      <button id="btn-lu-ok" class="big-btn">うおおお</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

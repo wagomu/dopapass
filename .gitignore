@@ -1,0 +1,4 @@
+tools/pdf/
+tools/pages/
+__pycache__/
+.claude/
