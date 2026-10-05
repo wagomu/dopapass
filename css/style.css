@@ -234,3 +234,111 @@ button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- 相棒（動物キャラ） ---------- */
+.sec-label small { font-weight: 500; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.partner-list {
+  display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; margin: 0 -16px; padding-left: 16px; padding-right: 16px;
+  scroll-snap-type: x proximity; scroll-padding-inline: 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.partner-list::-webkit-scrollbar { display: none; }
+.partner {
+  flex: none; width: 76px; min-height: 92px; border-radius: 16px; scroll-snap-align: start;
+  background: var(--card); border: 2px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+}
+.partner .pe { font-size: 38px; line-height: 1.1; }
+.partner .pn { font-size: 11px; font-weight: 700; }
+.partner.active { border-color: var(--yellow); box-shadow: 0 0 16px rgba(255, 210, 63, .45); }
+.partner.active .pe { animation: bob 1.2s ease-in-out infinite; }
+.partner.locked .pe { filter: grayscale(1) brightness(.35); }
+.partner.locked .pn { color: var(--muted); }
+
+.buddy { display: flex; align-items: center; gap: 10px; margin: 2px 0 8px; min-height: 60px; }
+.buddy-emoji { font-size: 50px; line-height: 1; flex: none; animation: bob 1.4s ease-in-out infinite; transform-origin: 50% 90%; }
+.bubble {
+  position: relative; flex: 1; min-width: 0;
+  background: #fff; color: #1a1030; font-weight: 800; font-size: 14px; line-height: 1.45;
+  padding: 8px 12px; border-radius: 14px;
+}
+.bubble::before {
+  content: ""; position: absolute; left: -7px; top: 50%; margin-top: -7px;
+  border: 7px solid transparent; border-left: 0; border-right-color: #fff;
+}
+.bubble.pop { animation: bubble-pop .3s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes bubble-pop { from { transform: scale(.6); opacity: 0; } }
+@keyframes bob { 50% { transform: translateY(-5px); } }
+.buddy.happy .buddy-emoji { animation: happy-jump .7s cubic-bezier(.3, 1.6, .5, 1) 2; }
+@keyframes happy-jump {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-26px) scale(1.25) rotate(-12deg); }
+  60% { transform: translateY(0) scale(.92, 1.08); }
+  80% { transform: translateY(-8px) rotate(8deg); }
+  100% { transform: translateY(0); }
+}
+.buddy.sad .buddy-emoji { animation: sad-shiver .5s; filter: saturate(.3) brightness(.8); transform: rotate(-8deg) translateY(4px); }
+@keyframes sad-shiver { 20%, 60% { transform: translateX(-4px) rotate(-8deg); } 40%, 80% { transform: translateX(4px) rotate(-8deg); } }
+.buddy.hurry .buddy-emoji { animation: hurry .25s linear infinite; }
+@keyframes hurry { 50% { transform: translateX(3px) rotate(4deg); } }
+.res-buddy { justify-content: center; margin: 0 0 14px; }
+.res-buddy .buddy-emoji { font-size: 64px; }
+.res-buddy .bubble { flex: 0 1 auto; }
+
+/* ---------- 正解の大演出 ---------- */
+.hero { position: absolute; left: 50%; top: 40%; width: 0; height: 0; }
+.rays {
+  position: absolute; left: -260px; top: -260px; width: 520px; height: 520px; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 210, 63, .55) 0 10deg, rgba(255, 46, 147, 0) 10deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%);
+  animation: rays-spin 1.4s linear, hero-fade 1.4s ease-out forwards;
+}
+.hero.rainbow .rays {
+  background: repeating-conic-gradient(#ff2e93 0 15deg, #ffd23f 15deg 30deg, #b6ff3b 30deg 45deg, #19e3ff 45deg 60deg, #b77bff 60deg 75deg);
+}
+@keyframes rays-spin { to { rotate: 120deg; } }
+.hero-face {
+  position: absolute; left: 0; top: 0; translate: -50% -60%; font-size: 120px; line-height: 1;
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, .5));
+  animation: hero-in 1.4s cubic-bezier(.2, 1.5, .4, 1) forwards;
+}
+.hero-text {
+  position: absolute; left: 0; top: 70px; translate: -50% 0; white-space: nowrap;
+  font-size: 34px; font-weight: 900; font-style: italic; color: #fff;
+  -webkit-text-stroke: 2px #a0360f; paint-order: stroke fill;
+  text-shadow: 0 0 18px rgba(255, 210, 63, .9), 0 4px 0 #a0360f;
+  animation: hero-in 1.4s cubic-bezier(.2, 1.5, .4, 1) .05s both;
+}
+@keyframes hero-in {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  25% { transform: scale(1.25) rotate(8deg); opacity: 1; }
+  40% { transform: scale(1) rotate(0); }
+  75% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(.8) translateY(-30px); opacity: 0; }
+}
+@keyframes hero-fade { 0% { opacity: 0; } 15% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+.critter { position: absolute; font-size: 40px; line-height: 1; will-change: transform, opacity; }
+
+/* 5コンボ以上でフィーバー */
+#screen-quiz.fever::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  border: 4px solid transparent; border-radius: 0;
+  background: linear-gradient(var(--bg), var(--bg)) padding-box,
+    linear-gradient(90deg, #ff2e93, #ffd23f, #b6ff3b, #19e3ff, #b77bff, #ff2e93) border-box;
+  background-size: 100% 100%, 300% 100%;
+  opacity: .9; animation: fever-border 1.2s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) border-box, linear-gradient(#000 0 0) padding-box;
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+@keyframes fever-border { to { background-position: 0 0, 300% 0; } }
+#screen-quiz > * { position: relative; z-index: 1; }
+#screen-quiz > .feedback { position: fixed; z-index: 40; }
+.fever-tag {
+  display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 99px; font-size: 12px; font-style: italic;
+  color: #000; background: linear-gradient(90deg, #ffd23f, #ff2e93); animation: pulse .6s infinite;
+}
+
+.lu-unlock:empty { display: none; }
+.lu-unlock { margin-top: 12px; padding: 12px; border-radius: 16px; background: var(--card); border: 2px solid var(--yellow); font-weight: 800; }
+.lu-unlock .ue { display: block; font-size: 56px; line-height: 1.1; animation: bob 1s ease-in-out infinite; }
+
+.timer.off { visibility: hidden; height: 0; margin-top: 0; }

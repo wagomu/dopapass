@@ -18,10 +18,10 @@
 ## ローカルで動かす
 
 ```bash
-python -m http.server 8000
+python -m http.server 8765
 ```
 
-ブラウザで http://localhost:8000 を開きます。localhost では Service Worker が無効です。オフライン動作を試すときは `?sw=1` を付けて開いてください。
+ブラウザで http://localhost:8765 を開きます。localhost では Service Worker が無効です。オフライン動作を試すときは `?sw=1` を付けて開いてください。
 
 ## 問題データ
 

@@ -1,6 +1,7 @@
 import * as P from './progress.js';
 import * as S from './sfx.js';
-import { buildSession, scoreFor, reaction, TIME_LIMIT, SESSION_SIZE } from './quiz.js';
+import * as A from './animals.js';
+import { buildSession, scoreFor, reaction, TIME_OPTIONS, SESSION_SIZE } from './quiz.js';
 
 const $ = (id) => document.getElementById(id);
 const KANA = ['ア', 'イ', 'ウ', 'エ'];
@@ -74,7 +75,9 @@ function renderHome() {
     $(`cnt-${mode}`).textContent = `${poolFor(mode, ui.field).length}問`;
   }
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === ui.mode));
-  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.field === ui.field));
+  document.querySelectorAll('#field-chips .chip').forEach(b => b.classList.toggle('active', b.dataset.field === ui.field));
+  renderPartners(s.level);
+  renderTimeChips();
 
   const n = poolFor(ui.mode, ui.field).length;
   $('btn-start').disabled = n === 0;
@@ -84,7 +87,53 @@ function renderHome() {
     : '';
 }
 
+function renderPartners(level) {
+  const current = P.get().partner;
+  const list = $('partner-list');
+  list.innerHTML = '';
+  for (const a of A.ANIMALS) {
+    const locked = a.unlock > level;
+    const b = document.createElement('button');
+    b.className = `partner${locked ? ' locked' : ''}${a.id === current ? ' active' : ''}`;
+    b.dataset.id = a.id;
+    b.disabled = locked;
+    b.setAttribute('aria-label', locked ? `Lv.${a.unlock}で解放` : a.name);
+    b.innerHTML = `<span class="pe">${locked ? '❔' : a.emoji}</span><span class="pn"></span>`;
+    b.querySelector('.pn').textContent = locked ? `🔒Lv.${a.unlock}` : a.name;
+    list.appendChild(b);
+  }
+  const next = A.ANIMALS.find(a => a.unlock > level);
+  $('partner-hint').textContent = next ? `Lv.${next.unlock}で新しい仲間` : 'ぜんぶ集めた！';
+}
+
+function renderTimeChips() {
+  const cur = P.get().timeLimit;
+  const box = $('time-chips');
+  box.innerHTML = '';
+  for (const sec of TIME_OPTIONS) {
+    const b = document.createElement('button');
+    b.className = `chip${sec === cur ? ' active' : ''}`;
+    b.dataset.sec = sec;
+    b.textContent = sec ? `${sec}秒` : 'なし';
+    box.appendChild(b);
+  }
+}
+
 function bindHome() {
+  $('partner-list').addEventListener('click', (e) => {
+    const b = e.target.closest('.partner');
+    if (!b || b.disabled) return;
+    S.unlock(); S.tap();
+    P.setPartner(b.dataset.id);
+    renderHome();
+  });
+  $('time-chips').addEventListener('click', (e) => {
+    const b = e.target.closest('.chip');
+    if (!b) return;
+    S.unlock(); S.tap();
+    P.setTimeLimit(Number(b.dataset.sec));
+    renderHome();
+  });
   $('mode-grid').addEventListener('click', (e) => {
     const b = e.target.closest('.mode-btn');
     if (!b) return;
@@ -121,7 +170,11 @@ function startSession() {
     xp: 0,
     results: [], // { q, ok, time }
     timer: null,
+    timeLimit: P.get().timeLimit,
+    partner: A.byId(P.get().partner),
   };
+  $('buddy-emoji').textContent = session.partner.emoji;
+  $('screen-quiz').classList.remove('fever');
   renderDots();
   show('quiz');
   showQuestion();
@@ -165,7 +218,18 @@ function showQuestion() {
   $('feedback').className = 'feedback hidden';
   window.scrollTo(0, 0);
   renderDots();
+  buddySay('idle', '');
   startTimer();
+}
+
+// 相棒にしゃべらせる。mood: '' | 'happy' | 'sad' | 'hurry'
+function buddySay(kind, mood) {
+  $('buddy').className = `buddy${mood ? ` ${mood}` : ''}`;
+  const bubble = $('buddy-bubble');
+  bubble.textContent = A.line(session.partner, kind);
+  bubble.classList.remove('pop');
+  void bubble.offsetWidth;
+  bubble.classList.add('pop');
 }
 
 function creditText(q) {
@@ -192,7 +256,10 @@ function renderTable(table) {
 
 function renderCombo(bump) {
   const el = $('combo-label');
-  el.textContent = session.combo >= 2 ? `${session.combo} COMBO🔥` : '';
+  el.innerHTML = '';
+  if (session.combo >= 2) el.append(`${session.combo} COMBO🔥`);
+  if (session.combo >= 5) el.append(Object.assign(document.createElement('span'), { className: 'fever-tag', textContent: 'FEVER' }));
+  $('screen-quiz').classList.toggle('fever', session.combo >= 5);
   if (bump) {
     el.classList.remove('bump');
     void el.offsetWidth;
@@ -204,15 +271,29 @@ function startTimer() {
   stopTimer();
   const fill = $('timer-fill');
   const start = performance.now();
-  let lastTick = TIME_LIMIT;
+  const limit = session.timeLimit;
+  session.startedAt = start;
+  $('timer-fill').parentElement.classList.toggle('off', !limit);
+  if (!limit) {
+    session.remain = null;
+    return;
+  }
+  // 残り4割で黄色、残り3秒で赤＋カウント音＋相棒があせる
+  const warnAt = Math.max(3, Math.round(limit * 0.4));
+  let lastTick = limit;
+  let hurried = false;
   const loop = (now) => {
-    const remain = Math.max(0, TIME_LIMIT - (now - start) / 1000);
-    const ratio = remain / TIME_LIMIT;
+    const remain = Math.max(0, limit - (now - start) / 1000);
+    const ratio = remain / limit;
     fill.style.transform = `scaleX(${ratio})`;
-    fill.className = 'timer-fill' + (remain <= 3 ? ' danger' : remain <= 7 ? ' warn' : '');
+    fill.className = 'timer-fill' + (remain <= 3 ? ' danger' : remain <= warnAt ? ' warn' : '');
     if (remain <= 3 && Math.ceil(remain) < lastTick) {
       lastTick = Math.ceil(remain);
       if (remain > 0) S.tick();
+    }
+    if (remain <= 3 && !hurried) {
+      hurried = true;
+      buddySay('hurry', 'hurry');
     }
     session.remain = ratio;
     if (remain <= 0) {
@@ -222,7 +303,6 @@ function startTimer() {
     }
     session.timer = requestAnimationFrame(loop);
   };
-  session.startedAt = start;
   session.timer = requestAnimationFrame(loop);
 }
 
@@ -280,9 +360,9 @@ function answer(choice) {
     const r = reaction('ok');
     head = `⭕ ${r}<small>+${sc.base} XP${sc.speed ? ` / スピードボーナス +${sc.speed}` : ''}</small>`;
     S.correct(session.combo);
-    burst(session.combo);
-    popup(session.combo >= 3 ? `${session.combo} COMBO!!` : r, false);
-    flash('rgba(182,255,59,.5)');
+    if ([3, 5, 10].includes(session.combo)) S.levelUp();
+    celebrate(session.combo >= 3 ? `${session.combo} COMBO!!` : r);
+    buddySay('ok', 'happy');
   } else {
     const hadCombo = session.combo;
     session.combo = 0;
@@ -292,9 +372,10 @@ function answer(choice) {
     popup(r, true);
     flash('rgba(255,77,77,.5)');
     shake();
+    buddySay('ng', 'sad');
   }
   P.recordAnswer(q.id, ok);
-  session.results[session.index] = { q, ok, time: Math.min(elapsed, TIME_LIMIT) };
+  session.results[session.index] = { q, ok, time: session.timeLimit ? Math.min(elapsed, session.timeLimit) : elapsed };
 
   $('quiz-xp').textContent = session.xp;
   renderCombo(ok);
@@ -323,6 +404,7 @@ function finishSession() {
   const total = s.questions.length;
   // パーフェクトボーナス
   if (correct === total) s.xp += 50;
+  const oldLevel = P.summary().level;
   const newLevel = P.finishSession(s.xp, s.maxCombo);
 
   const rate = correct / total;
@@ -336,6 +418,9 @@ function finishSession() {
   $('res-xp').textContent = s.xp;
   $('res-combo').textContent = s.maxCombo;
   $('res-time').textContent = (s.results.reduce((a, r) => a + r.time, 0) / total).toFixed(1);
+  $('res-buddy-emoji').textContent = s.partner.emoji;
+  $('res-buddy-bubble').textContent = rate >= 0.8 ? A.line(s.partner, 'ok') : rate >= 0.5 ? A.line(s.partner, 'idle') : A.line(s.partner, 'ng');
+  $('res-buddy-emoji').parentElement.className = `buddy res-buddy ${rate >= 0.8 ? 'happy' : rate < 0.5 ? 'sad' : ''}`;
 
   const list = $('res-list');
   list.innerHTML = '';
@@ -358,7 +443,16 @@ function finishSession() {
       $('lu-title').textContent = t !== P.titleFor(newLevel - 1)
         ? `新称号「${t}」GET！`
         : next ? `次の称号まであと ${next - newLevel} レベル` : `称号「${t}」`;
-      $('levelup').classList.remove('hidden');
+      const unlocked = A.newlyUnlocked(oldLevel, newLevel);
+      const box = $('lu-unlock');
+      box.innerHTML = '';
+      for (const a of unlocked) {
+        const d = document.createElement('div');
+        d.innerHTML = '<span class="ue"></span>';
+        d.querySelector('.ue').textContent = a.emoji;
+        d.append(`「${a.name}」が仲間になった！`);
+        box.appendChild(d);
+      }      $('levelup').classList.remove('hidden');
       S.levelUp();
       burst(15);
     }, 700);
@@ -366,8 +460,56 @@ function finishSession() {
 }
 
 // ---------- エフェクト ----------
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// 正解の大演出: 相棒がズームイン＋回転する光線＋動物の噴水＋紙吹雪。コンボで豪華になる
+function celebrate(text) {
+  const combo = session.combo;
+  flash(combo >= 5 ? 'rgba(255,210,63,.55)' : 'rgba(182,255,59,.5)');
+  burst(combo);
+  if (reducedMotion()) { popup(text, false); return; }
+
+  const layer = $('fx-layer');
+  const hero = document.createElement('div');
+  hero.className = `hero${combo >= 5 ? ' rainbow' : ''}`;
+  hero.innerHTML = '<div class="rays"></div><div class="hero-face"></div><div class="hero-text"></div>';
+  hero.querySelector('.hero-face').textContent = session.partner.emoji;
+  hero.querySelector('.hero-text').textContent = text;
+  layer.appendChild(hero);
+  setTimeout(() => hero.remove(), 1500);
+
+  // 解放済みの仲間たちが下から飛び出す
+  const crew = A.unlockedAt(P.summary().level).map(a => a.emoji);
+  const extras = ['⭐', '✨', '🎉', '💯'];
+  const n = Math.min(6 + combo * 3, 36);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('div');
+    c.className = 'critter';
+    c.textContent = i % 3 === 2 ? extras[i % extras.length] : crew[i % crew.length];
+    c.style.left = `${Math.random() * (w - 40)}px`;
+    c.style.top = `${h}px`;
+    c.style.fontSize = `${28 + Math.random() * 26}px`;
+    layer.appendChild(c);
+    const peak = h * (0.25 + Math.random() * 0.45);
+    const drift = (Math.random() - 0.5) * 140;
+    const spin = (Math.random() - 0.5) * 720;
+    c.animate([
+      { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+      { transform: `translate(${drift / 2}px, ${-peak}px) rotate(${spin / 2}deg)`, opacity: 1, offset: 0.45 },
+      { transform: `translate(${drift}px, 40px) rotate(${spin}deg)`, opacity: 0.9 },
+    ], {
+      duration: 1200 + Math.random() * 500,
+      delay: Math.random() * 250,
+      easing: 'cubic-bezier(.25,.6,.5,1)',
+      fill: 'backwards',
+    }).onfinish = () => c.remove();
+  }
+}
+
 function burst(power) {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (reducedMotion()) return;
   const layer = $('fx-layer');
   const colors = ['#ff2e93', '#19e3ff', '#b6ff3b', '#ffd23f', '#b77bff'];
   const n = Math.min(14 + power * 4, 70);

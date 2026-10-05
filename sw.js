@@ -1,6 +1,6 @@
 // オフライン対応: 初回にアプリ一式をキャッシュし、以降は stale-while-revalidate。
 // アプリや問題を更新したら VERSION を上げる。
-const VERSION = 'dopapass-v1';
+const VERSION = 'dopapass-v2';
 const ASSETS = [
   './',
   'index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   'js/quiz.js',
   'js/progress.js',
   'js/sfx.js',
+  'js/animals.js',
   'data/past.json',
   'data/original.json',
   'manifest.webmanifest',

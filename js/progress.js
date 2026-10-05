@@ -24,6 +24,9 @@ function blank() {
     streak: 0,
     lastDay: null,
     muted: false,
+    // 1問あたりの制限時間（秒）。0 は制限なし
+    timeLimit: 30,
+    partner: 'inu',
     // id -> { c: 正解数, w: 不正解数 }
     record: {},
     // 苦手リスト: id -> true
@@ -130,3 +133,5 @@ export function timesSeen(id) {
 }
 
 export function setMuted(m) { state.muted = m; save(); }
+export function setTimeLimit(sec) { state.timeLimit = sec; save(); }
+export function setPartner(id) { state.partner = id; save(); }

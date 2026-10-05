@@ -1,7 +1,8 @@
 // 出題の選び方とスコア計算。DOM には触らない。
 
 export const SESSION_SIZE = 10;
-export const TIME_LIMIT = 15; // 秒
+// 選べる制限時間（秒）。0 は制限なし
+export const TIME_OPTIONS = [10, 15, 30, 60, 0];
 
 const OK_REACTIONS = ['それな！', '天才か？', '秒で正解', '優勝🏆', '神', 'わかってるやん', 'ガチ勢', 'エグい', '完全に理解してる', 'つよ'];
 const NG_REACTIONS = ['ドンマイ', '草', 'それは沼', 'ワンチャンなかった', 'おしい…？', '次いこ次', '伸びしろですねぇ'];
@@ -39,9 +40,10 @@ export function comboMultiplier(combo) {
   return 1;
 }
 
-// 正解時の獲得XP。combo は今回の正解を含めた連続数、remain は残り時間の割合(0..1)
+// 正解時の獲得XP。combo は今回の正解を含めた連続数、remain は残り時間の割合(0..1)。
+// 制限なし(remain=null)のときはスピードボーナスなし
 export function scoreFor(combo, remain) {
   const base = Math.round(10 * comboMultiplier(combo));
-  const speed = Math.round(5 * Math.max(0, Math.min(1, remain)));
+  const speed = remain == null ? 0 : Math.round(5 * Math.max(0, Math.min(1, remain)));
   return { base, speed, total: base + speed };
 }
